@@ -9,16 +9,40 @@ TT_RPAREN = 'RPAREN'
 TT_EOF = 'EOF'
 
 class Erro:
-    def __init__(self, nomeDoErro, detalheDoErro):
-        self.nomeoErro = nomeDoErro
+    def __init__(self, posInicio, posFinal, nomeDoErro, detalheDoErro):
+        self.posInicio = posInicio
+        self.posFinal = posFinal
+        self.nomeDoErro = nomeDoErro
         self.detalheDoErro = detalheDoErro
 
     def toString(self):
-        return f"{self.nomeoErro}: {self.detalheDoErro}"
+        resultado = f"{self.nomeDoErro}: {self.detalheDoErro} \n"
+        resultado += f"Posição do erro -> Linha: {self.posInicio.linha}, Coluna: {self.posInicio.coluna}"
+        return resultado
 
 class ErroCaractereInvalido(Erro):
-    def __init__(self, detalheDoErro):
-        super().__init__('Erro de caractere inválido', detalheDoErro)
+    def __init__(self, posInicio, posFinal, detalheDoErro):
+        super().__init__(posInicio, posFinal, 'Erro de caractere inválido', detalheDoErro)
+
+class Posicao:
+    def __init__(self, indice, linha, coluna):
+        self.indice = indice
+        self.linha = linha
+        self.coluna = coluna
+
+    def avancar(self, atual = None):
+        self.indice += 1
+        self.coluna += 1
+
+        if atual == '/n':
+            self.coluna = 0
+            self.linha += 1
+
+        return self
+
+    def copia(self):
+        return Posicao(self.indice, self.linha, self.coluna)
+    
 
 class Token:
     def __init__(self, tipo, valor = None):
@@ -33,14 +57,14 @@ class Token:
 class Lexer:
     def __init__(self, text):
         self.text = text
-        self.pos = -1
+        self.pos = Posicao(-1, 0, -1)
         self.atual = None
         self.avancar()
     
     def avancar(self):
-        self.pos += 1
-        if(self.pos < len(self.text)):
-            self.atual = self.text[self.pos]
+        self.pos.avancar()
+        if(self.pos.indice < len(self.text)):
+            self.atual = self.text[self.pos.indice]
         else:
             self.atual = None
     
@@ -95,8 +119,9 @@ class Lexer:
                 self.avancar()
             else:
                 char = self.atual
+                posInicio = self.pos.copia()
                 self.avancar()
-                return [], ErroCaractereInvalido(char)
+                return [], ErroCaractereInvalido(posInicio, self.pos, char)
             
         return tokens, None
     
