@@ -1,0 +1,5 @@
+expr : term (SUM | MINUS) term
+
+term : factor (DIV | MUL) factor
+
+factor : (INT | FLOAT)

@@ -17,7 +17,8 @@ class Erro:
 
     def toString(self):
         resultado = f"{self.nomeDoErro}: {self.detalheDoErro} \n"
-        resultado += f"Posição do erro -> Linha: {self.posInicio.linha}, Coluna: {self.posInicio.coluna}"
+        resultado += f"Posição do erro -> Linha: {self.posInicio.linha}, Coluna: {self.posInicio.coluna} \n"
+        resultado += f"Arquivo: {self.posInicio.nomeArquivo}"
         return resultado
 
 class ErroCaractereInvalido(Erro):
@@ -25,7 +26,8 @@ class ErroCaractereInvalido(Erro):
         super().__init__(posInicio, posFinal, 'Erro de caractere inválido', detalheDoErro)
 
 class Posicao:
-    def __init__(self, indice, linha, coluna):
+    def __init__(self, indice, linha, coluna, nomeArquivo):
+        self.nomeArquivo = nomeArquivo
         self.indice = indice
         self.linha = linha
         self.coluna = coluna
@@ -41,7 +43,7 @@ class Posicao:
         return self
 
     def copia(self):
-        return Posicao(self.indice, self.linha, self.coluna)
+        return Posicao(self.indice, self.linha, self.coluna, self.nomeArquivo)
     
 
 class Token:
@@ -55,9 +57,9 @@ class Token:
         return f'{self.tipo}'
     
 class Lexer:
-    def __init__(self, text):
+    def __init__(self, nomeArquivo, text):
         self.text = text
-        self.pos = Posicao(-1, 0, -1)
+        self.pos = Posicao(-1, 0, -1, nomeArquivo)
         self.atual = None
         self.avancar()
     
@@ -124,11 +126,79 @@ class Lexer:
                 return [], ErroCaractereInvalido(posInicio, self.pos, char)
             
         return tokens, None
+
+class NumberNode:
+    def __init__(self, token):
+        self.token = token
     
-def run(text):
-    lexer = Lexer(text)
+    def __repr__(self):
+        return f"{self.token}"
+    
+class opBinario:
+    def __init__(self, left, operadorToken, right):
+        self.left = left
+        self.operadorToken = operadorToken
+        self.right = right
+    
+    def __repr__(self):
+        return f"({self.left}, {self.operadorToken}, {self.right})"
+    
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.tokenIndex = -1
+        self.avancar()
+
+    def avancar(self):
+        self.tokenIndex += 1
+        if self.tokenIndex < len(self.tokens):
+            self.tokenAtual = self.tokens[self.tokenIndex]
+        
+        return self.tokenAtual
+    
+    def factor(self):
+        token = self.tokenAtual
+
+        if token.tipo in (TT_INT, TT_FLOAT):
+            return NumberNode(token)
+
+    def term(self):
+        left = self.factor()
+        self.avancar()
+        while self.tokenAtual.tipo in (TT_DIV, TT_MUL):
+            operador = self.tokenAtual
+            self.avancar()
+            right = self.factor()
+
+            left = opBinario(left, operador, right)
+        
+        return left
+
+    def expr(self):
+        left = self.term()
+
+        while self.tokenAtual.tipo in (TT_PLUS, TT_MINUS):
+            operador = self.tokenAtual
+            self.avancar()
+            right = self.term()
+
+            left = opBinario(left, operador, right)
+        
+        return left
+    
+    def parse(self):
+        resultado = self.expr()
+        return resultado
+
+def run(nomeArquivo, text):
+    lexer = Lexer(nomeArquivo, text)
     tokens, erro = lexer.make_Tokens()
-    return tokens, erro
+
+    if tokens is not None:
+        parser = Parser(tokens)
+        arvOp = parser.parse()
+
+    return tokens, erro, arvOp
 
 
 
