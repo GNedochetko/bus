@@ -1,10 +1,25 @@
+import sys
 import bus
 
-while True:
-    text = input('bus>>')
-    tokens, erro, arvOp = bus.run("file.bus", text)
-    if erro is not None:
-        print(erro.toString())
+def executarArquivo(pathArquivo):
+    if not pathArquivo.endswith('.bus'):
+        print("A extensão do arquivo está errada.")
+        return
+    
+    try:
+        with open(pathArquivo, 'r') as arquivo:
+            texto = arquivo.read()
+    except FileNotFoundError:
+        print(f"Arquivo {pathArquivo} não encontrado")
+
+    for numero, linha in enumerate(texto.split('\n'), start=1):
+        if linha.strip() == '':
+            continue
+
+        resultado, erro = bus.run(pathArquivo, linha)
+        
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Use: python shel.py <nomeArquivo>.bus")
     else:
-        print(tokens)
-        print(arvOp)
+        executarArquivo(sys.argv[1])
