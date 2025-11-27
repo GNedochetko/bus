@@ -1,4 +1,6 @@
 import sys
+import time
+import busSemPOO
 import bus
 
 def executarArquivo(pathArquivo):
@@ -12,11 +14,21 @@ def executarArquivo(pathArquivo):
     except FileNotFoundError:
         print(f"Arquivo {pathArquivo} não encontrado")
 
-    for numero, linha in enumerate(texto.split('\n'), start=1):
-        if linha.strip() == '':
-            continue
+    linhas = [linha for linha in texto.split('\n') if linha.strip() != '']
 
-        resultado, erro = bus.run(pathArquivo, linha)
+    def executar(modulo, descricao):
+        print(f"\n=== {descricao} ===")
+        inicio_total = time.perf_counter()
+        for numero, linha in enumerate(linhas, start=1):
+            try:
+                resultado, erro = modulo.run(pathArquivo, linha)
+            except Exception as exc:
+                resultado, erro = None, exc
+        tempo_total = time.perf_counter() - inicio_total
+        print(f"Tempo total: {tempo_total:.6f}s\n")
+
+    executar(bus, "Com OO")
+    executar(busSemPOO, "Sem OO")
         
 if __name__ == "__main__":
     if len(sys.argv) != 2:
